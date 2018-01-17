@@ -52,9 +52,8 @@ object MaxTempsSql1 {
     observationsDF.createOrReplaceTempView("observations")
 
     val maxTempsDF = spark.sql("select year, country, max(temperature) maxTemp " +
-      "from observations group by year, country")
+      "from observations group by year, country").coalesce(1)
 
     maxTempsDF.write.format("csv").save(outputDirectory)
-    // maxTempsDF.write.partitionBy("year", "country").option("path", outputDirectory).saveAsTable("maxTemps")
   }
 }
