@@ -27,29 +27,27 @@ object MaxTempsSql1 {
 
     import spark.implicits._
 
-    val stationsTextFile = spark.sparkContext.textFile(stationFilename)
-      .filter(x => x.length > 0 && x.charAt(0).isDigit)
+    val stations = spark.read.textFile(stationFilename)
+      .filter(s => s.length > 0 && s.charAt(0).isDigit)
+      .map(stationLine => Station(stationLine.substring(0, 12), stationLine.substring(43, 45)))
+    stations.createOrReplaceTempView("stations")
 
-    val stationsDF = stationsTextFile
-      .map(line => (line.substring(0, 12), line.substring(43, 45)))
-      .map(attributes => Station(attributes._1, attributes._2))
-      .toDF()
+    val observationsWithoutCountry = spark.read.text(inputFilename)
+      .filter(!$"value".startsWith("STN---"))
+      .map(line => {
+        val lineString = line.getString(0)
+        val stationName = lineString.substring(0, 12)
+        val year = lineString.substring(14, 18).toInt
+        val temperature = lineString.substring(24, 30).toFloat
+        Observation(stationName, year, temperature, "")
+      })
+    observationsWithoutCountry.createOrReplaceTempView("stationYearTemps")
 
-    stationsDF.createOrReplaceTempView("stations")
-
-    val stationYearTempsTextFile = spark.sparkContext.textFile(inputFilename).filter(!_.startsWith("STN---"))
-    val stationYearTempsDF = stationYearTempsTextFile
-      .map(x => (x.substring(0, 12), x.substring(14, 18).toInt, x.substring(24, 30).toFloat))
-      .map(attributes => Observation(attributes._1, attributes._2, attributes._3, ""))
-      .toDF()
-
-    stationYearTempsDF.createOrReplaceTempView("stationYearTemps")
-
-    val observationsDF = spark.sql("select stationName, year, temperature, s.country " +
+    val observations = spark.sql("select stationName, year, temperature, s.country " +
       "from stationYearTemps o, stations s " +
       "where o.stationName = s.name")
 
-    observationsDF.createOrReplaceTempView("observations")
+    observations.createOrReplaceTempView("observations")
 
     val maxTempsDF = spark.sql("select year, country, max(temperature) maxTemp " +
       "from observations group by year, country").coalesce(1)
