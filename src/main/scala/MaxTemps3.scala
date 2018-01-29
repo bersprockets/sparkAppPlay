@@ -49,7 +49,7 @@ object MaxTemps3 {
       }
 
     // reduce: get max temperature for each key (year, country)
-    val results = yearCountryTemp.reduceByKey((x, y) => if (x > y) x else y)
-    results.saveAsTextFile(outputDirectory)
+    val results = yearCountryTemp.reduceByKey((x, y) => if (x > y) x else y).coalesce(1)
+    results.map{ case ((year, country), temp) => s"$year,${country.trim},$temp" }.saveAsTextFile(outputDirectory)
   }
 }
