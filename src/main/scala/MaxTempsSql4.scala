@@ -12,19 +12,19 @@ object MaxTempsSql4 {
     }
     val inputFormat = args(0)
 
-    if (args.length < 1) {
+    if (args.length < 2) {
       Console.err.println("No input file specified")
       System.exit(1)
     }
     val inputFilename = args(1)
 
-    if (args.length < 2) {
+    if (args.length < 3) {
       Console.err.println("No station file specified")
       System.exit(2)
     }
     val stationFilename = args(2)
 
-    if (args.length < 3) {
+    if (args.length < 4) {
       Console.err.println("No output file specified")
       System.exit(3)
     }
