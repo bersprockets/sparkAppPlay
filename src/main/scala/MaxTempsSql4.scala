@@ -3,7 +3,6 @@ import org.apache.spark.sql.types._
 
 object MaxTempsSql4 {
   case class Station(name: String, country: String)
-  case class Observation(stationName: String, year: Int, temperature: Float, country: String)
 
   def main(args: Array[String]) {
     if (args.length < 1) {
