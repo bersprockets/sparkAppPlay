@@ -30,7 +30,7 @@ observations_without_country = spark.read.format(format).schema(input_schema).lo
 observations = observations_without_country.\
                join(stations, observations_without_country.stationName == stations.stationName)
 
-max_temps = observations.groupBy("year", "country").max("temperature").coalesce(1)
+max_temps = observations.groupBy("year", "country").max("temperature").orderBy("year", "country").coalesce(1)
 
 max_temps.write.format("csv").save(output_filename)
 

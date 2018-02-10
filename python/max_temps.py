@@ -22,6 +22,7 @@ observations_with_country = observations_without_country \
                                  ((year, country), temperature))
 
 results = observations_with_country.reduceByKey(lambda x, y: max(x, y)).coalesce(1)
+results = results.sortByKey()
 results.map(lambda ((year, country), temperature): \
             "%d,%s,%0.1f" % (year, country.strip(), temperature)) \
        .saveAsTextFile(output_filename)
