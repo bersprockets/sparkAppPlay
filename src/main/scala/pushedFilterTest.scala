@@ -38,6 +38,8 @@ object pushedFilterTest {
         dfJoinFilterGroupByKudu(args, spark)
       case "dsJoinPreFilterGroupBy" =>
         dsJoinPreFilterGroupBy(args, spark, schema)
+      case "dsJoinPreFilterGroupByKudu" =>
+        dsJoinPreFilterGroupByKudu(args, spark)
       case _ => Console.err.println("What???")
     }
 
@@ -71,7 +73,7 @@ object pushedFilterTest {
     val table2 = spark.read.schema(schema).format(format).load(rightInputFilename).as[Record]
 
     val resultDs = table1
-      .joinWith(table2, table2.col("randid2") === table1.col("randid1"))
+      .joinWith(table2, table1.col("randid1") === table2.col("randid2"))
       .filter("_2.randid2 > 30")
       .groupBy("_1.randid1")
       .agg(count("*") as "numOccurances")
@@ -109,7 +111,7 @@ object pushedFilterTest {
     val table2 = spark.read.schema(schema).format(format).load(rightInputFilename)
 
     val resultDf = table1
-      .join(table2, table2.col("randid2") === table1.col("randid1"))
+      .join(table2,  table1.col("randid1") === table2.col("randid2"))
       .filter(table2("randid2") >"30")
       .groupBy(table1("randid1"))
       .agg(count("*") as "numOccurances")
@@ -147,7 +149,7 @@ object pushedFilterTest {
     val table2 = spark.read.schema(schema).format(format).load(rightInputFilename).as[Record]
 
     val resultDs = table1
-      .joinWith(table2, table2.col("randid2") === table1.col("randid1"))
+      .joinWith(table2, table1.col("randid1") === table2.col("randid2"))
       .filter("_2.randid2 > 30")
 
     resultDs.explain
@@ -183,7 +185,7 @@ object pushedFilterTest {
     val table2 = spark.read.schema(schema).format(format).load(rightInputFilename)
 
     val resultDf = table1
-      .join(table2, table2.col("randid2") === table1.col("randid1"))
+      .join(table2, table1.col("randid1") === table2.col("randid2"))
       .filter(table2("randid2") >"30")
 
     resultDf.explain
@@ -284,7 +286,7 @@ object pushedFilterTest {
     val table2 = table2Df.as[KuduRecord]
 
     val resultDs = table1
-      .joinWith(table2, table2.col("randid2") === table1.col("randid1"))
+      .joinWith(table2, table1.col("randid1") === table2.col("randid2"))
       .filter("_2.randid2 > 30")
       .groupBy("_1.randid1")
       .agg(count("*") as "numOccurances")
@@ -329,7 +331,7 @@ object pushedFilterTest {
       .kudu
 
     val resultDf = table1
-      .join(table2, table2.col("randid2") === table1.col("randid1"))
+      .join(table2, table1.col("randid1") === table2.col("randid2"))
       .filter(table2("randid2") >"30")
       .groupBy(table1("randid1"))
       .agg(count("*") as "numOccurances")
@@ -369,7 +371,55 @@ object pushedFilterTest {
     val table1Filtered = table1.filter("randid1 > 30")
     val table2Filtered = table2.filter("randid2 > 30")
     val resultDs = table1Filtered
-      .joinWith(table2Filtered, table2Filtered.col("randid2") === table1Filtered.col("randid1"))
+      .joinWith(table2Filtered, table1Filtered.col("randid1") === table2Filtered.col("randid2") )
+      .groupBy("_1.randid1")
+      .agg(count("*") as "numOccurances")
+
+    resultDs.explain
+
+    val startTime = System.currentTimeMillis()
+    println(resultDs.count)
+    val interval = System.currentTimeMillis() - startTime
+    println(s"Interval is $interval")
+  }
+
+  def dsJoinPreFilterGroupByKudu(args: Array[String], spark: SparkSession): Unit = {
+    if (args.length < 2) {
+      Console.err.println("No kudu master specified")
+      System.exit(1)
+    }
+    val master = args(1);
+
+    if (args.length < 3) {
+      Console.err.println("No left kudu table specified")
+      System.exit(1)
+    }
+    val leftTableName = args(2);
+
+    if (args.length < 4) {
+      Console.err.println("No right kudu table specified")
+      System.exit(1)
+    }
+    val rightTableName = args(3);
+
+    import spark.implicits._
+
+    val table1Df = spark
+      .read
+      .options(Map("kudu.master" -> master, "kudu.table" -> leftTableName))
+      .kudu
+    val table1 = table1Df.as[KuduRecord]
+
+    val table2Df = spark
+      .read
+      .options(Map("kudu.master" -> master, "kudu.table" -> rightTableName))
+      .kudu
+    val table2 = table2Df.as[KuduRecord]
+
+    val table1Filtered = table1.filter("randid1 > 30")
+    val table2Filtered = table2.filter("randid2 > 30")
+    val resultDs = table1Filtered
+      .joinWith(table2Filtered, table1Filtered.col("randid1") === table2Filtered.col("randid2") )
       .groupBy("_1.randid1")
       .agg(count("*") as "numOccurances")
 
