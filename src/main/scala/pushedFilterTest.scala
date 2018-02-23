@@ -56,8 +56,8 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(leftInputFilename).as[Record]
-    val table2 = spark.read.schema(schema).parquet(rightInputFilename).as[Record]
+    val table1 = spark.read.schema(schema).format(format).load(leftInputFilename).as[Record]
+    val table2 = spark.read.schema(schema).format(format).load(rightInputFilename).as[Record]
 
     val resultDs = table1
       .joinWith(table2, table2.col("randid2") === table1.col("randid1"))
@@ -94,8 +94,8 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(leftInputFilename)
-    val table2 = spark.read.schema(schema).parquet(rightInputFilename)
+    val table1 = spark.read.schema(schema).format(format).load(leftInputFilename)
+    val table2 = spark.read.schema(schema).format(format).load(rightInputFilename)
 
     val resultDf = table1
       .join(table2, table2.col("randid2") === table1.col("randid1"))
@@ -132,8 +132,8 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(leftInputFilename).as[Record]
-    val table2 = spark.read.schema(schema).parquet(rightInputFilename).as[Record]
+    val table1 = spark.read.schema(schema).format(format).load(leftInputFilename).as[Record]
+    val table2 = spark.read.schema(schema).format(format).load(rightInputFilename).as[Record]
 
     val resultDs = table1
       .joinWith(table2, table2.col("randid2") === table1.col("randid1"))
@@ -168,8 +168,8 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(leftInputFilename)
-    val table2 = spark.read.schema(schema).parquet(rightInputFilename)
+    val table1 = spark.read.schema(schema).format(format).load(leftInputFilename)
+    val table2 = spark.read.schema(schema).format(format).load(rightInputFilename)
 
     val resultDf = table1
       .join(table2, table2.col("randid2") === table1.col("randid1"))
@@ -198,7 +198,7 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(inputFilename).as[Record]
+    val table1 = spark.read.schema(schema).format(format).load(inputFilename).as[Record]
 
     val resultDs = table1
       .filter("randid2 > 30")
@@ -226,7 +226,7 @@ object pushedFilterTest {
 
     import spark.implicits._
 
-    val table1 = spark.read.schema(schema).parquet(inputFilename)
+    val table1 = spark.read.schema(schema).format(format).load(inputFilename)
 
     val resultDf = table1
       .filter(table1("randid2") > "30")
