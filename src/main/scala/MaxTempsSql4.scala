@@ -34,7 +34,9 @@ object MaxTempsSql4 {
 
     val stations = spark.read.textFile(stationFilename)
       .filter(s => s.length > 0 && s.charAt(0).isDigit)
-      .map(stationLine => Station(stationLine.substring(0, 12), stationLine.substring(43, 45)))
+      .map {
+        stationLine => Station(stationLine.substring(0, 12), stationLine.substring(43, 45))
+      }
 
     val inputSchema: StructType = StructType(
       StructField("stationName", StringType)
@@ -49,7 +51,10 @@ object MaxTempsSql4 {
       .join(stations.as("s"), $"o.stationName" === $"s.name")
       .select($"o.stationName", $"o.year", $"o.temperature", $"s.country")
 
-    val maxTemps = observations.groupBy('year, 'country).max("temperature").coalesce(1)
+    val maxTemps = observations
+      .groupBy('year, 'country)
+      .max("temperature")
+      .sort('year, 'country).coalesce(1)
     maxTemps.write.format("csv").save(outputDirectory)
   }
 }
