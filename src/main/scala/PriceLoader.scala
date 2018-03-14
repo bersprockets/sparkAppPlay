@@ -1,4 +1,4 @@
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 
@@ -21,7 +21,7 @@ object PriceLoader {
       Console.err.println("No output file specified")
       System.exit(2)
     }
-    val outputDirectory = args(2)
+    val outputDirectoryName = args(2)
 
     if (args.length < 4) {
       Console.err.println("No sec file specified")
@@ -109,7 +109,7 @@ object PriceLoader {
     )
 
     val priceExchangeSplitDf = priceDf.select($"*", split('exchangeName, ":").as("exchangeSplit"))
-    priceExchangeSplitDf.show
+    // priceExchangeSplitDf.show
 
     // supplement price input with exchange information
     val priceExchangeDf = priceExchangeSplitDf.as("p")
@@ -118,7 +118,7 @@ object PriceLoader {
           &&  $"p.exchangeSplit".getItem(1) === $"e.name")
       .select($"p.*", $"e.id".as("exchangeId"), $"e.country".as("country"))
 
-    priceExchangeDf.show
+    // priceExchangeDf.show
 
     // resolve external ids in input file to internal ids
     val priceSecIdDf = priceExchangeDf.as("p")
@@ -169,9 +169,6 @@ object PriceLoader {
         $"bid", $"offer", $"date2", $"exchangeId", $"country", $"secId")
     val priceNotReadyDf = priceSecIdCleanedDf.where(isnull('secId))
 
-    println("priceReadyDf count " + priceReadyDf.count)
-    println("priceNotReadyDf count " + priceNotReadyDf.count)
-
     // TODO: should really only join with secIdExternal entries with max endDate
     val priceNotReadySetDf = priceNotReadyDf.drop('secId).as("p")
       .join(secIdExternalDf.as("s"), $"p.secIdExternal" === $"s.externalId"
@@ -181,15 +178,9 @@ object PriceLoader {
       .select($"p.secIdExternal", $"p.externalIdTypeId", $"exchangeName", $"name", $"open", $"close",
         $"bid", $"offer", $"date2", $"exchangeId", $"p.country", $"s.secId")
 
-    // priceReadyDf.printSchema
-    // priceNotReadySet.printSchema
-
     // there might be some stragglers with secId not set to a good value
     // TODO: actually, this step not needed because of above inner join
     val priceNowReadyDf = priceNotReadySetDf.where(!isnull('secId))
-
-    println(priceNotReadySetDf.count)
-    println(priceNowReadyDf.count)
 
     val pricesSet = priceReadyDf.union(priceNowReadyDf)
 
@@ -197,10 +188,25 @@ object PriceLoader {
     val secPriceOpenDf = pricesSet
       .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'open.as("price"))
       .where('open > -0.1)
-    secPriceOpenDf.printSchema
-    println(secPriceOpenDf.count)
 
+    val secPriceCloseDf = pricesSet
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'close.as("price"))
+      .where('close > -0.1)
+
+    val secPriceBidDf = pricesSet
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'bid.as("price"))
+      .where('bid > -0.1)
+
+    val secPriceOfferDf = pricesSet
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'offer.as("price"))
+      .where('offer > -0.1)
+
+    val secPriceDf = secPriceOpenDf
+      .union(secPriceCloseDf)
+      .union(secPriceBidDf)
+      .union(secPriceOfferDf)
+      .coalesce(50)
+
+    secPriceDf.write.mode(SaveMode.Overwrite).format(inputFormat).save(outputDirectoryName)
   }
-
-
 }
