@@ -109,7 +109,6 @@ object PriceLoader {
     )
 
     val priceExchangeSplitDf = priceDf.select($"*", split('exchangeName, ":").as("exchangeSplit"))
-    // priceExchangeSplitDf.show
 
     // supplement price input with exchange information
     val priceExchangeDf = priceExchangeSplitDf.as("p")
@@ -117,8 +116,6 @@ object PriceLoader {
         $"p.exchangeSplit".getItem(0) === $"e.country"
           &&  $"p.exchangeSplit".getItem(1) === $"e.name")
       .select($"p.*", $"e.id".as("exchangeId"), $"e.country".as("country"))
-
-    // priceExchangeDf.show
 
     // resolve external ids in input file to internal ids
     val priceSecIdDf = priceExchangeDf.as("p")
@@ -129,9 +126,6 @@ object PriceLoader {
         && $"s.startDate2" <= $"p.date2"
         && $"s.endDate2" > $"p.date2", "left_outer")
       .select($"p.*", $"s.secId")
-    // priceSecIdDf.show
-    // println(priceSecIdDf.count)
-    // println(priceSecIdDf.where(isnull('secId)).count)
 
     // find all external sec ids in price data where the external id has expired
     // but also has no newer external id of the same type
@@ -161,11 +155,7 @@ object PriceLoader {
         && $"s.endDate2" <= $"p.date2", "left_outer")
       .select($"p.*", $"s.bad")
 
-    // println("priceSecIdMarkedDf count is " + priceSecIdMarkedDf.count)
-    // println("priceSecIdMarkedDf bad count is " + priceSecIdMarkedDf.where(!isnull('bad) && isnull('secId)).count)
     val priceSecIdCleanedDf = priceSecIdMarkedDf.where(isnull('bad) || !isnull('secId))
-    // println("priceSecIdCleanedDf count is " + priceSecIdCleanedDf.count)
-    // println("priceSecIdCleanedDf unset count is " + priceSecIdCleanedDf.where(isnull('secId)).count)
 
     // update all the null secId values with any external id that matches
     val priceReadyDf = priceSecIdCleanedDf
@@ -173,10 +163,6 @@ object PriceLoader {
       .select($"secIdExternal", $"externalIdTypeId", $"exchangeName", $"name", $"open", $"close",
         $"bid", $"offer", $"date2", $"exchangeId", $"country", $"secId")
     val priceNotReadyDf = priceSecIdCleanedDf.where(isnull('secId))
-    //  println("priceNotReadyDf distinct ids " + priceNotReadyDf.select('secIdExternal, 'externalIdTypeId, 'country)
-    //  .dropDuplicates.count)
-
-    priceNotReadyDf.select('secIdExternal, 'externalIdTypeId, 'country).dropDuplicates.show(75)
 
     // find secIdExternal entries that are not really expired and bring the back to life
     // Use except here!!
@@ -220,15 +206,6 @@ object PriceLoader {
       .union(secIdExternalNowReadyDf
         .select('secId, 'externalId, 'externalIdTypeId, 'country, 'startDate, 'endDate, 'startDate2, 'endDate2))
     // val newSecIdExternalDf = secIdExternalCleanedDf.union(secIdExternalNowReadyDf)
-    secIdExternalNowReadyDf.where('externalId === "GB1066858894").show
-    newSecIdExternalDf.where('externalId === "GB1066858894").show
-    priceNotReadyDf.where('secIdExternal === "GB1066858894").show
-
-    /* val existingCorrectSecIdExternal = secIdExternalDf
-      .except(toReanimateDf) */
-
-    // println("secIdExternalDf count " + secIdExternalDf.count)
-    // println("existingCorrectSecIdExternal count " + existingCorrectSecIdExternal.count)
 
     // TODO: should really only join with secIdExternal entries with max endDate
     val priceNotReadySetDf = priceNotReadyDf.drop('secId).as("p")
@@ -240,17 +217,9 @@ object PriceLoader {
         && $"s.endDate2" > $"p.date2")
       .select($"p.secIdExternal", $"p.externalIdTypeId", $"exchangeName", $"name", $"open", $"close",
         $"bid", $"offer", $"date2", $"exchangeId", $"p.country", $"s.secId")
-    priceNotReadySetDf.where('secIdExternal === "GB1066858894").show
 
     // there might be some stragglers with secId not set to a good value
-    // TODO: actually, this step not needed because of above inner join
     val priceNowReadyDf = priceNotReadySetDf.where(!isnull('secId))
-    priceNotReadyDf.persist
-    priceNotReadySetDf.persist
-    priceNowReadyDf.persist
-    println("priceNotReadyDf count is " + priceNotReadySetDf.count)
-    println("priceNotReadySetDf count is " + priceNotReadySetDf.count)
-    println("priceNowReadyDf count is " + priceNowReadyDf.count)
 
     val pricesSet = priceReadyDf.union(priceNowReadyDf)
 
