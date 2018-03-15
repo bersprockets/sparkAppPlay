@@ -229,15 +229,15 @@ object PriceLoader {
       .where('open > -0.1)
 
     val secPriceCloseDf = pricesSet
-      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'close.as("price"))
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("close").as("priceType"), 'close.as("price"))
       .where('close > -0.1)
 
     val secPriceBidDf = pricesSet
-      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'bid.as("price"))
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("bid").as("priceType"), 'bid.as("price"))
       .where('bid > -0.1)
 
     val secPriceOfferDf = pricesSet
-      .select('secId, 'exchangeId, 'date2.as("date"), lit("open").as("priceType"), 'offer.as("price"))
+      .select('secId, 'exchangeId, 'date2.as("date"), lit("offer").as("priceType"), 'offer.as("price"))
       .where('offer > -0.1)
 
     val secPriceDf = secPriceOpenDf
