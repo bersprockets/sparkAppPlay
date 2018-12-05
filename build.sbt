@@ -2,8 +2,8 @@ name := "Temps"
 
 version := "1.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.7"
 
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.2.1" % "provided"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.2.1" % "provided"
-libraryDependencies += "org.apache.kudu" %% "kudu-spark2" % "1.2.0" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.0-SNAPSHOT" % "provided"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.0-SNAPSHOT" % "provided"
+

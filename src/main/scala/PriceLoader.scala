@@ -112,7 +112,7 @@ object PriceLoader {
 
     // supplement price input with exchange information
     val priceExchangeDf = priceExchangeSplitDf.as("p")
-      .join(exchangeDf.as("e"),
+      .join(broadcast(exchangeDf).as("e"),
         $"p.exchangeSplit".getItem(0) === $"e.country"
           &&  $"p.exchangeSplit".getItem(1) === $"e.name")
       .select($"p.*", $"e.id".as("exchangeId"), $"e.country".as("country"))
