@@ -47,9 +47,14 @@ object GenerateWideDataFormat {
     val dsOptions = if (args.length >= 7 && args(6).contains("=")) {
       println(args(6).getClass.getName)
       val opts = args(6).split(",")
+      println(s"Length of opts is ${opts.size}")
       val tokenizedOptions = opts.map { opt =>
-        val tokens = opt.split("=")
-        (tokens(0),tokens(1))
+        val tempTokens = opt.split("=")
+        if (tempTokens.size == 1) {
+          (tempTokens(0), "")
+        } else {
+          (tempTokens(0), tempTokens(1))
+        }
       }
       tokenizedOptions.toMap
     } else {
