@@ -8,7 +8,7 @@ import scala.collection.JavaConverters
 
 object Try3 {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().appName("GenerateWideDataFormat").enableHiveSupport().getOrCreate()
+    val spark = SparkSession.builder().appName("repro3").enableHiveSupport().getOrCreate()
 
     val df = spark.read.schema("id1 int, id2 int").csv(args(0))
     val groupBySeq = Stream(col("id1"))
